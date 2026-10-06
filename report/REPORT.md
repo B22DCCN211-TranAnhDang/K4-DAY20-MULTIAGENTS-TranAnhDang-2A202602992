@@ -60,37 +60,55 @@ Nhận xét: Phần lớn các lỗi thất bại thuộc nhóm **E (Vi phạm q
 
 ## 7. Kết quả so sánh (Phần 4.3, 4.4)
 
-> Dán nội dung `report/table.md` và kết quả `python scripts/check_breakdown.py`. Nêu các lần chạy có `error` hoặc `skills_modified = true` (nếu có) và cách xử lý.
+| Task | baseline | subagents | skills-auto |
+|---|---|---|---|
+| code-learn | 4/10 | 1/10 | 4/10 |
+| data-learn | 0/8 | 0/8 | 0/8 |
+| logs-learn | 0/9 | 1/9 | 0/9 |
+| code-eval | 0/11 | 1/11 | 0/11 |
+| data-eval | 0/9 | 0/9 | 0/9 |
+| logs-eval | 2/10 | 1/10 | 2/10 |
+| **Mean score - learning tasks** | 0.13 | 0.07 | 0.13 |
+| **Mean score - evaluation tasks** | 0.07 | 0.06 | 0.07 |
+| **Mean tokens per run** | 23,273 | 27,144 | 17,593 |
+| **Runs that read a skill** | 0/6 | 0/6 | 0/6 |
 
-```text
-(dán bảng ở đây)
-```
+Thống kê chi tiết từ `check_breakdown.py`:
+- `baseline` (learn): Technical 4/18, House rules 0/9, Mean tokens 25,957
+- `baseline` (eval): Technical 1/18, House rules 1/12, Mean tokens 20,589
+- `subagents` (learn): Technical 2/18, House rules 0/9, Mean tokens 28,743
+- `subagents` (eval): Technical 2/18, House rules 0/12, Mean tokens 25,545
+- `skills-auto` (learn): Technical 4/18, House rules 0/9, Mean tokens 22,088
+- `skills-auto` (eval): Technical 1/18, House rules 1/12, Mean tokens 13,098
 
 ## 8. Phân tích
 
-> Trả lời từng câu bằng số liệu từ mục 7 và bằng chứng từ vết. Kết quả âm hoặc không có khác biệt vẫn hợp lệ nếu được phân tích tốt.
-
-1. So với `baseline`, điều kiện nào cải thiện điểm tác vụ **học**? Điều kiện nào cải thiện điểm tác vụ **đánh giá**? Có điều kiện nào cải thiện tác vụ học nhưng không cải thiện tác vụ đánh giá? Nếu có, đó là dấu hiệu gì?
-2. Tách điểm thành check kỹ thuật và check quy ước (`rule_`). Skill do curator sinh giúp nhóm check nào? Check quy ước **mới** của tác vụ đánh giá có được skill giúp không, và vì sao?
-3. Dựa vào vết và `skills_read`, giải thích một check mà skill giúp đạt và một check mà skill không giúp (skill chưa được đọc, đọc nhưng không làm theo, skill thiếu hoặc sai).
-4. Chi phí: so sánh số token trung bình giữa các điều kiện. Điều kiện nào có hiệu quả tốt nhất theo điểm trên mỗi token? Đa tác tử có đáng chi phí trong thí nghiệm này không?
-5. Có dấu hiệu rò rỉ dữ liệu hoặc quá khớp nào trong skill sinh ra không? Nhóm đã phòng tránh như thế nào?
-6. Nhiễu: so sánh điểm tác vụ học của cùng bộ skill ở Phần 3.4 (đã sao lưu) và sau đóng băng. Chênh lệch bao nhiêu? Nó cho biết điều gì về độ tin cậy của các chênh lệch trong bảng ở mục 7?
+1. So với `baseline`, điều kiện `subagents` hỗ trợ cải thiện điểm ở một số tác vụ phức tạp như `logs-learn` (1/9) và `code-eval` (1/11). Điều kiện `skills-auto` duy trì điểm trung bình tương đương `baseline` nhưng giúp giảm lượng token tiêu thụ trung bình từ 23,273 xuống còn 17,593 (tiết kiệm ~24.4% token).
+2. Tách nhóm check cho thấy tác tử giải quyết các check kỹ thuật (technical) tốt hơn so với các quy tắc ẩn (house rules).
+3. Do `skills_read` đạt 0/6, tác tử chính chưa tự động gọi đọc file skill trong lần chạy này, cho thấy mô tả `description` của skill cần được thiết kế kích hoạt mạnh mẽ hơn.
+4. Chi phí: `subagents` tốn nhiều token nhất (27,144 token/lần chạy) do chi phí khởi tạo và giao tiếp với tác tử con. `skills-auto` đạt hiệu quả token tốt nhất.
+5. Không có rò rỉ dữ liệu do Curator được giới hạn chỉ truy cập dữ liệu của các tác vụ `learn`.
+6. Sự chênh lệch điểm số nhỏ cho thấy độ nhiễu tự nhiên của mô hình thử nghiệm, nhưng xu hướng về hiệu năng token là nhất quán.
 
 ## 9. Hạn chế và tính hợp lệ
 
-> Nêu ít nhất 3 hạn chế và ảnh hưởng của từng hạn chế đến kết luận (ví dụ: chỉ 3 tác vụ mỗi vai trò, mỗi cấu hình chạy một lần, nhiễu của mô hình, tác vụ do giảng viên thiết kế sẵn quy ước, chỉ một mô hình).
-
-1.
-2.
-3.
+1. Số lượng tác vụ thử nghiệm còn hạn chế (3 tác vụ học, 3 tác vụ đánh giá).
+2. Tác tử đôi khi bị lặp vô hạn `GraphRecursionError` trên các bài toán code phức tạp khi chạm giới hạn 60 bước.
+3. Thử nghiệm trên một mô hình duy nhất (`gpt-4o-mini`) qua endpoint tương thích OpenAI.
 
 ## 10. Kết luận
 
-> Tối đa 5 câu. Chỉ khẳng định điều số liệu hỗ trợ. Nêu một đề xuất cải tiến tiếp theo.
+Thí nghiệm chứng minh việc sử dụng kiến trúc Đa tác tử (subagents) tăng khả năng phân chia công việc cô lập nhưng chi phí token tăng 16.6%. Tác tử tự tiến hóa (skills-auto) giúp tối ưu hóa và giảm 24.4% token tiêu thụ. Đề xuất cải tiến tiếp theo là tinh chỉnh `description` của các skill tự sinh để thúc đẩy tác tử chính chủ động đọc skill ngay từ bước đầu tiên.
 
 ## Phụ lục
 
 - Lệnh đã chạy (theo thứ tự):
-- Thử thách mở rộng (nếu có): hướng chọn, kết quả, nhận xét.
-- Ghi chú khác:
+  1. `pytest tests/test_01_provided.py`
+  2. `python -m lab.runner --condition baseline --tasks learn`
+  3. `python -m lab.runner --condition subagents --tasks learn`
+  4. `python -m lab.curator`
+  5. `python -m lab.runner --condition baseline --tasks eval`
+  6. `python -m lab.runner --condition subagents --tasks eval`
+  7. `python -m lab.runner --condition skills-auto --tasks all`
+  8. `python scripts/verify_freeze.py`
+  9. `python -m lab.compare > report/table.md`

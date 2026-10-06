@@ -30,9 +30,10 @@ def make_model():
     if not name:
         raise RuntimeError(HELP)
     temperature = float(os.getenv("LAB_TEMPERATURE", "0"))
+    max_tokens = int(os.getenv("LAB_MAX_TOKENS", "2048"))
     base_url = os.getenv("LAB_BASE_URL")
     if base_url:
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(base_url=base_url, api_key=os.getenv("LAB_API_KEY") or "not-needed", model=name,
-                          temperature=temperature, timeout=120)
-    return init_chat_model(name, temperature=temperature)
+                          temperature=temperature, max_tokens=max_tokens, timeout=120)
+    return init_chat_model(name, temperature=temperature, max_tokens=max_tokens)
