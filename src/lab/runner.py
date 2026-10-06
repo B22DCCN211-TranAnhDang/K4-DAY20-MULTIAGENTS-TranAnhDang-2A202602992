@@ -46,6 +46,16 @@ def render_trace(messages) -> str:
     return "\n\n".join(parts)
 
 
+import datetime
+import shutil
+import tempfile
+import time
+
+from langchain_core.callbacks import UsageMetadataCallbackHandler
+
+from .agent import build_agent
+
+
 def run_task(task_id: str, condition: str, results_dir="results", model=None, recursion_limit: int = 60) -> dict:
     """Chạy MỘT tác vụ dưới MỘT điều kiện, chấm điểm, ghi kết quả, và trả về bản ghi (record).
 
@@ -65,7 +75,108 @@ def run_task(task_id: str, condition: str, results_dir="results", model=None, re
     Lỗi khi chạy tác tử KHÔNG được làm chương trình dừng: ghi vào `error` và vẫn chấm điểm.
     Sandbox là thư mục tạm NGOÀI kho mã nguồn và phải được xóa sau khi chạy.
     """
-    raise NotImplementedError("TODO 1: cài đặt run_task (xem guides/pseudocode/03_runner.md)")
+    if condition not in CONDITIONS:
+        raise ValueError(f"Unknown condition: {condition}")
+
+    cfg = CONDITIONS[condition]
+    task = get_task(task_id)
+    skills_dir = ROOT / cfg["skills_dir"] if cfg["skills_dir"] else None
+    out_dir = Path(results_dir) / condition / task_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    sandbox = Path(tempfile.mkdtemp())
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    record = {
+        "task": task_id,
+        "condition": condition,
+        "role": task.role,
+        "error": None,
+        "timestamp": timestamp,
+    }
+
+    try:
+        prepare_sandbox(task, sandbox, skills_dir)
+        hash_before = hash_dir(sandbox / "skills")
+        record["skills_sha256"] = hash_before
+
+        agent = build_agent(sandbox, mode=cfg["mode"], use_skills=(skills_dir is not None), model=model)
+        usage = UsageMetadataCallbackHandler()
+        t0 = time.time()
+        messages = []
+        final_message = ""
+
+        try:
+            result = agent.invoke(
+                {"messages": [{"role": "user", "content": task.instruction}]},
+                config={"callbacks": [usage], "recursion_limit": recursion_limit},
+            )
+            messages = result.get("messages", [])
+            if messages:
+                final_message = str(messages[-1].content)
+        except Exception as exc:  # noqa: BLE001
+            record["error"] = f"{type(exc).__name__}: {exc}"
+
+        t1 = time.time()
+        record["seconds"] = round(t1 - t0, 1)
+
+        tok_meta = usage.usage_metadata or {}
+        in_tok = tok_meta.get("input_tokens", 0)
+        out_tok = tok_meta.get("output_tokens", 0)
+        tot_tok = tok_meta.get("total_tokens", 0)
+
+        if tot_tok == 0:
+            for m in messages:
+                if isinstance(m, AIMessage) and getattr(m, "usage_metadata", None):
+                    um = m.usage_metadata
+                    in_tok += um.get("input_tokens", 0)
+                    out_tok += um.get("output_tokens", 0)
+                    tot_tok += um.get("total_tokens", 0)
+
+        record["tokens"] = {
+            "input": in_tok,
+            "output": out_tok,
+            "total": tot_tok,
+        }
+
+        calls = []
+        for m in messages:
+            if isinstance(m, AIMessage) and hasattr(m, "tool_calls") and m.tool_calls:
+                calls.extend(m.tool_calls)
+
+        record["tool_calls"] = len(calls)
+        record["subagent_calls"] = sum(1 for c in calls if c.get("name") == "task")
+
+        skills_read = set()
+        for c in calls:
+            if c.get("name") == "read_file":
+                args = c.get("args", {})
+                fp = args.get("file_path", "") or args.get("path", "")
+                if "skills/" in fp:
+                    after_skills = fp.split("skills/")[1]
+                    parts = [p for p in after_skills.split("/") if p]
+                    if parts:
+                        skills_read.add(parts[0])
+
+        record["skills_read"] = len(skills_read)
+        hash_after = hash_dir(sandbox / "skills")
+        record["skills_modified"] = (hash_after != hash_before)
+        record["final_message"] = final_message
+
+        g = grade(task, sandbox / "workspace")
+        record["score"] = g.get("score", 0.0)
+        record["passed"] = g.get("passed", 0)
+        record["total"] = g.get("total", 0)
+        record["checks"] = g.get("checks", [])
+
+        (out_dir / "trace.md").write_text(render_trace(messages), encoding="utf-8")
+
+    finally:
+        shutil.rmtree(sandbox, ignore_errors=True)
+
+    with open(out_dir / "run.json", "w", encoding="utf-8") as f:
+        json.dump(record, f, indent=2, ensure_ascii=False)
+
+    return record
 
 
 def main(argv=None):
