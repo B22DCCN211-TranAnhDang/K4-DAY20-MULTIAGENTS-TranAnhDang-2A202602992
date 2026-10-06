@@ -10,8 +10,8 @@ def _run(agent, text="hello"):
 
 
 def test_backend_finds_python_and_hides_secrets(tmp_path, monkeypatch):
-    monkeypatch.setenv("AZURE_OPENAI_KEY", "super-secret-key-123")
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "super-secret-key-123")
+    for var in ("LAB_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"):
+        monkeypatch.setenv(var, "super-secret-key-123")
     out = make_backend(tmp_path).execute("which python && env").output
     assert "python" in out
     assert "super-secret-key-123" not in out

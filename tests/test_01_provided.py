@@ -6,6 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from lab.compare import build_table, load_runs
 from lab.curator import parse_skill_blocks, validate_skill
 from lab.grading import grade
+from lab.model import make_model
 from lab.runner import render_trace
 from lab.tasks import eval_markers, get_task, hash_dir, hash_skills, list_tasks, prepare_sandbox
 
@@ -130,3 +131,26 @@ def test_compare_ignores_renamed_backup_folders(tmp_path):
                                                  "tokens": {"total": 1}}))
     runs = load_runs(tmp_path)
     assert [r["passed"] for r in runs] == [9] and runs[0]["condition"] == "skills-auto"
+
+
+def test_make_model_explains_what_to_set_when_nothing_is_configured(monkeypatch):
+    import pytest
+    for var in ("LAB_MODEL", "LAB_BASE_URL"):
+        monkeypatch.delenv(var, raising=False)
+    with pytest.raises(RuntimeError, match="LAB_MODEL"):
+        make_model()
+
+
+def test_make_model_supports_an_openai_compatible_endpoint(monkeypatch):
+    monkeypatch.setenv("LAB_BASE_URL", "http://localhost:11434/v1")
+    monkeypatch.setenv("LAB_MODEL", "some-local-model")
+    monkeypatch.delenv("LAB_API_KEY", raising=False)
+    model = make_model()                      # builds the client; no network call
+    assert type(model).__name__ == "ChatOpenAI" and model.model_name == "some-local-model"
+
+
+def test_make_model_supports_a_langchain_provider_prefix(monkeypatch):
+    monkeypatch.delenv("LAB_BASE_URL", raising=False)
+    monkeypatch.setenv("LAB_MODEL", "openai:some-model")
+    monkeypatch.setenv("OPENAI_API_KEY", "dummy-key-for-the-test")
+    assert type(make_model()).__name__ == "ChatOpenAI"

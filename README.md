@@ -78,7 +78,7 @@ Ba điều kiện được so sánh (condition):
 
 ## 4. Cài đặt
 
-Yêu cầu: Python 3.11 trở lên; hệ điều hành macOS hoặc Linux (trên Windows dùng WSL hoặc Docker, vì shell của tác tử dùng `/bin/sh`); thông tin truy cập mô hình do giảng viên cấp.
+Yêu cầu: Python 3.11 trở lên; hệ điều hành macOS hoặc Linux (trên Windows dùng WSL hoặc Docker, vì shell của tác tử dùng `/bin/sh`); **API key và nhà cung cấp mô hình do sinh viên tự chuẩn bị** (giảng viên không cấp khóa).
 
 ```bash
 git clone <URL-kho-mã-nguồn> && cd <tên-kho>
@@ -89,12 +89,16 @@ mkdir -p report && cp REPORT_TEMPLATE.md report/REPORT.md
 pytest tests/test_01_provided.py
 ```
 
-Điền `.env` theo một trong hai cách (`model.py` ưu tiên cách 1 nếu cả ba biến của cách 1 đều có):
+### Cấu hình mô hình (tự chuẩn bị)
 
-1. **Azure OpenAI hoặc cổng tương thích OpenAI**: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_DEPLOYMENT_MODEL`.
-2. **Nhà cung cấp khác** (ví dụ DeepSeek): `LAB_MODEL=deepseek:deepseek-chat` và `DEEPSEEK_API_KEY`. Tên mô hình thay đổi theo thời gian, đối chiếu tài liệu của nhà cung cấp.
+Sinh viên dùng khóa và nhà cung cấp của riêng mình. Điền `.env` (sao chép từ `.env.example`) theo một trong hai cách:
 
-Kết quả mong đợi của `pytest tests/test_01_provided.py`: `12 passed`. Không commit tệp `.env`.
+1. **Nhà cung cấp có sẵn trong LangChain:** `LAB_MODEL=<nhà-cung-cấp>:<tên-model>` và biến khóa của nhà cung cấp đó. Ví dụ `openai:<tên-model>` với `OPENAI_API_KEY`, `anthropic:<tên-model>` với `ANTHROPIC_API_KEY`, `google_genai:<tên-model>` với `GOOGLE_API_KEY`.
+2. **Bất kỳ endpoint tương thích OpenAI** (OpenRouter, Together, Groq, Ollama hoặc vLLM chạy trên máy, ...): `LAB_BASE_URL`, `LAB_MODEL` và `LAB_API_KEY` (có thể bỏ trống với máy chủ cục bộ).
+
+Yêu cầu với mô hình: **hỗ trợ gọi công cụ (tool calling)**. Nên chọn mô hình nhỏ, giá thấp để tiết kiệm token; mô hình quá yếu hoặc không gọi công cụ ổn định sẽ cho kết quả không đại diện. Tên mô hình thay đổi theo thời gian: lấy từ tài liệu của nhà cung cấp. Khóa API chỉ nằm trong `.env`, không commit và không dán vào báo cáo.
+
+Kết quả mong đợi của `pytest tests/test_01_provided.py`: `15 passed`. Không commit tệp `.env`.
 
 ## 5. Sản phẩm nộp
 

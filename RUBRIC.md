@@ -27,7 +27,7 @@ Chạy `pytest` trên mã nguồn của sinh viên. Điểm mỗi nhóm = điể
 | `tests/test_03_runner.py` (6 test) | `run_task` ghi bản ghi đầy đủ (gồm `skills_sha256`, `timestamp`); không sửa `tasks/*/workspace`; ghi lỗi thay vì ném ngoại lệ; phát hiện sửa skill; đếm `skills_read` (số skill khác nhau) và `subagent_calls`. Test đếm điều kiện (`test_three_conditions_defined`) đạt sẵn vì `CONDITIONS` được cung cấp. | 12 |
 | `tests/test_04_curator.py` (2 test) | `curate_skills` chỉ ghi skill hợp lệ, không đưa tác vụ đánh giá vào prompt, có đưa phản hồi `detail` của tác vụ học, không cho tên chứa `../`; không gọi mô hình khi không có check thất bại | 8 |
 
-`tests/test_01_provided.py` (12 test) kiểm tra mã có sẵn (gồm `validate_skill`, `parse_skill_blocks`, `compare`), không tính điểm nhưng phải đạt.
+`tests/test_01_provided.py` (15 test) kiểm tra mã có sẵn (gồm `validate_skill`, `parse_skill_blocks`, `compare`, `make_model`), không tính điểm nhưng phải đạt.
 
 Điều kiện: sinh viên không được sửa thư mục `tests/`, `tasks/`, `scripts/` hay các tệp có sẵn (`model.py`, `tasks.py`, `grading.py`, `testing.py`, `compare.py`, hằng số prompt, `render_trace`, `main` của runner, `validate_skill`, `parse_skill_blocks`). Giảng viên chạy test trên bản gốc của các tệp này.
 

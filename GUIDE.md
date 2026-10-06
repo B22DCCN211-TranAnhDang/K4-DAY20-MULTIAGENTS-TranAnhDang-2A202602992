@@ -18,9 +18,9 @@ Làm theo `README.md` mục 4 (tạo môi trường ảo, `pip install -e .`, t�
 pytest tests/test_01_provided.py
 ```
 
-Đầu ra: `12 passed`. Bộ test này xác nhận 6 tác vụ tồn tại, tác vụ chưa sửa không đạt điểm tối đa, và các mô-đun có sẵn (gồm `validate_skill`, `parse_skill_blocks`, `compare`) hoạt động.
+Đầu ra: `15 passed`. Bộ test này xác nhận 6 tác vụ tồn tại, tác vụ chưa sửa không đạt điểm tối đa, và các mô-đun có sẵn (gồm `validate_skill`, `parse_skill_blocks`, `compare`, `make_model`) hoạt động.
 
-Kiểm tra kết nối mô hình (tốn một lượng token rất nhỏ):
+Kiểm tra cấu hình mô hình bằng khóa của bạn (tốn một lượng token rất nhỏ). Nếu chưa đặt `LAB_MODEL`, chương trình báo cần đặt biến nào:
 
 ```bash
 python -c "from lab.model import make_model; print(make_model().invoke('Reply with OK').content)"
@@ -252,11 +252,12 @@ Chọn **một** hướng, thực hiện và ghi kết quả vào phụ lục b�
 | Vết cho thấy `python: command not found` trong lệnh của tác tử | `make_backend` không đặt `PATH` | Xem `01_agent.md`, bước 1. |
 | Vết cho thấy `No such file or directory: '/workspace/...'` | Tác tử dùng đường dẫn tuyệt đối `/workspace` trong shell; chỉ dạng tương đối `workspace/...` dùng được ở shell | Dùng nguyên `BASE_PROMPT` có sẵn, không sửa; xem `01_agent.md`, mục "Quy ước đường dẫn". |
 | `NotImplementedError: FilesystemMiddleware does not yet support permissions ...` | Dùng tham số `permissions=` cùng backend có shell | Bỏ `permissions`; phát hiện sửa skill bằng băm thư mục. |
-| `AuthenticationError` hoặc 401 | Khóa API sai hoặc chưa nạp `.env` | Kiểm tra `.env`, chạy lại lệnh kiểm tra ở mục 0.2. |
-| 404 từ cổng mô hình | Sai giá trị `AZURE_OPENAI_ENDPOINT` hoặc tên deployment | Hỏi giảng viên giá trị đúng; đừng đoán phiên bản API. |
-| 429 (vượt giới hạn tốc độ) | Nhiều sinh viên cùng dùng một khóa | Chạy tuần tự, chờ và chạy lại; không chạy song song. |
+| `RuntimeError: No model configured` | Chưa đặt `LAB_MODEL` trong `.env` | Làm theo `README.md` mục 4 (Cấu hình mô hình). |
+| `AuthenticationError` hoặc 401 | Khóa API sai, sai biến khóa của nhà cung cấp, hoặc chưa nạp `.env` | Kiểm tra `.env` (đúng tên biến khóa của nhà cung cấp), chạy lại lệnh kiểm tra ở mục 0.2. |
+| 404 hoặc "model not found" | Sai `LAB_MODEL` hoặc `LAB_BASE_URL` | Đối chiếu tên model và URL với tài liệu của nhà cung cấp. |
+| 429 (vượt giới hạn tốc độ) | Vượt giới hạn của gói API | Chạy tuần tự, chờ và chạy lại; không chạy song song. |
 | Một lần chạy kéo dài hoặc tốn nhiều token | Tác tử lặp vô hạn | Giảm `--recursion-limit` (ví dụ 40). Ghi vào `error` của `run.json` và giải thích trong báo cáo. |
-| Tác tử không gọi công cụ, chỉ trả lời văn bản | Mô hình không hỗ trợ gọi công cụ ổn định | Đổi mô hình sang một mô hình chat hỗ trợ gọi công cụ; hỏi giảng viên. |
+| Tác tử không gọi công cụ, chỉ trả lời văn bản | Mô hình không hỗ trợ gọi công cụ ổn định | Đổi sang mô hình hỗ trợ tool calling (xem `README.md` mục 4). |
 | `skills_read` bằng 0 dù có skill | `description` của skill quá hẹp hoặc không nêu tình huống kích hoạt | Chạy lại curator (tối đa 2 lần) và đánh giá `description` theo `05_skill_quality.md`. |
 | Curator không ghi skill nào | Không có check thất bại ở tác vụ học, hoặc mọi skill bị `validate_skill` từ chối | Đọc thông báo in ra; kiểm tra kết quả `baseline`; xem `validate_skill` báo vấn đề gì. |
 | `git commit` báo "nothing to commit" rồi không tạo tag | Dùng `&&` mà không có thay đổi | Dùng `git commit --allow-empty` như ở Phần 4.1. |
